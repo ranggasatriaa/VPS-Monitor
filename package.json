@@ -1,0 +1,36 @@
+{
+  "name": "vps-monitor",
+  "productName": "VPS Monitor",
+  "version": "1.0.0",
+  "description": "Desktop dashboard that streams vpsmon-json.sh from multiple VPSes over SSH and charts it live",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "mock": "electron . --mock",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "local.vpsmonitor.app",
+    "productName": "VPS Monitor",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**",
+      "renderer/**",
+      "scripts/**",
+      "node_modules/**"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3"
+  }
+}

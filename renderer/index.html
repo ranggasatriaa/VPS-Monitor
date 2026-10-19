@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VPS Monitor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside id="sidebar">
+    <div class="brand">VPS Monitor <span id="mockBadge" class="badge" hidden>mock data</span></div>
+    <button class="nav-item active" id="navOverview" type="button">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z"/></svg>
+      Overview
+    </button>
+    <div class="side-label">Servers <span class="hint">drag to reorder</span></div>
+    <ul id="serverList"></ul>
+    <div class="side-actions">
+      <button id="addServer" type="button" class="primary">+ Add server</button>
+      <div class="row">
+        <button id="connectAll" type="button">Connect all</button>
+        <button id="disconnectAll" type="button">Stop all</button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <header id="topbar">
+      <div class="title-wrap">
+        <h1 id="pageTitle">Overview</h1>
+        <div id="pageMeta" class="meta"></div>
+      </div>
+      <div class="spacer"></div>
+      <div id="detailActions" class="actions" hidden>
+        <span id="detailStatus" class="pill"></span>
+        <button id="btnConnect" type="button" class="primary">Connect</button>
+        <button id="btnDisconnect" type="button">Disconnect</button>
+        <button id="btnEdit" type="button">Edit</button>
+      </div>
+      <div class="seg" id="windowSel" role="group" aria-label="Time window">
+        <button type="button" data-ms="300000">5m</button>
+        <button type="button" data-ms="900000">15m</button>
+        <button type="button" data-ms="3600000">1h</button>
+      </div>
+    </header>
+
+    <section id="overview">
+      <div id="emptyState" class="empty" hidden>
+        <h2>No servers yet</h2>
+        <p>Add a VPS with its SSH host, user and private key file. The app uploads <code>vpsmon-json.sh</code> to <code>~/.vpsmon/</code> and streams its output.</p>
+        <button type="button" class="primary" id="emptyAdd">+ Add server</button>
+      </div>
+      <div id="cards" class="cards"></div>
+      <div class="chart-grid two" id="cmpGrid">
+        <figure class="panel">
+          <figcaption>CPU busy — all servers <span class="unit">% of all cores</span></figcaption>
+          <div class="chart-box"><canvas id="cmpCpu"></canvas></div>
+        </figure>
+        <figure class="panel">
+          <figcaption>RAM used — all servers <span class="unit">% of total</span></figcaption>
+          <div class="chart-box"><canvas id="cmpRam"></canvas></div>
+        </figure>
+      </div>
+    </section>
+
+    <section id="detail" hidden>
+      <div id="banner" class="banner" hidden>
+        <span id="bannerText"></span>
+        <button id="bannerAction" type="button" class="primary"></button>
+      </div>
+      <div id="tiles" class="tiles"></div>
+      <div class="chart-grid two">
+        <figure class="panel">
+          <figcaption>Host CPU <span class="unit">% of all cores, stacked</span></figcaption>
+          <div class="chart-box"><canvas id="chHostCpu"></canvas></div>
+        </figure>
+        <figure class="panel">
+          <figcaption>Memory <span class="unit">bytes</span></figcaption>
+          <div class="chart-box"><canvas id="chMem"></canvas></div>
+        </figure>
+        <figure class="panel">
+          <figcaption>CPU per module <span class="unit">% of all cores · click legend to toggle</span></figcaption>
+          <div class="chart-box tall"><canvas id="chModCpu"></canvas></div>
+        </figure>
+        <figure class="panel">
+          <figcaption>RAM per module <span class="unit">bytes · click legend to toggle</span></figcaption>
+          <div class="chart-box tall"><canvas id="chModRam"></canvas></div>
+        </figure>
+        <figure class="panel">
+          <figcaption>Queue jobs <span class="unit">count</span></figcaption>
+          <div class="chart-box"><canvas id="chQueue"></canvas></div>
+          <div id="queueTop" class="queue-top"></div>
+        </figure>
+        <figure class="panel">
+          <figcaption>Modules <span class="unit">latest sample, highest CPU first</span></figcaption>
+          <div class="table-wrap">
+            <table id="modTable">
+              <thead><tr><th>Module</th><th>State</th><th class="num">CPU%</th><th class="num">RAM</th><th class="num">Swap</th><th class="num">Tasks</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </figure>
+      </div>
+      <details class="panel log">
+        <summary>Connection log</summary>
+        <pre id="logBox"></pre>
+      </details>
+    </section>
+  </main>
+
+  <dialog id="editor">
+    <form id="editorForm" method="dialog">
+      <h2 id="editorTitle">Add server</h2>
+      <div class="form-grid">
+        <label>Name<input name="name" placeholder="prod-app" required></label>
+        <label class="color-field">Color<input name="color" type="color"></label>
+        <label>Host<input name="host" placeholder="203.0.113.10 or vps.example.com" required></label>
+        <label>Port<input name="port" type="number" min="1" max="65535" value="22"></label>
+        <label>Username<input name="username" value="root" required></label>
+        <label>Refresh interval (s)<input name="interval" type="number" min="1" max="60" value="2"></label>
+        <label class="span2">Private key file
+          <span class="file-row"><input name="privateKeyPath" placeholder="C:\Users\you\.ssh\id_ed25519" required><button type="button" id="pickKey">Browse…</button></span>
+        </label>
+        <label class="span2">Key passphrase <span class="hint">only if the key is encrypted · kept in memory, never saved</span>
+          <input name="passphrase" type="password" autocomplete="off">
+        </label>
+        <label>Queue database <span class="hint">empty = no queue</span><input name="db" placeholder="peta_hukum_qa"></label>
+        <div class="checks">
+          <label class="check"><input name="useSudo" type="checkbox"> Run with <code>sudo -n</code> <span class="hint">needed for the queue (runuser postgres)</span></label>
+          <label class="check"><input name="autoConnect" type="checkbox"> Connect when the app starts</label>
+        </div>
+        <label class="span2">Modules <span class="hint">optional · one <code>label|unit.service</code> per line · empty = built-in list</span>
+          <textarea name="modulesConf" rows="4" placeholder="api|myapi.service&#10;nginx|nginx.service"></textarea>
+        </label>
+        <div class="span2 hostkey" id="hostKeyRow" hidden>
+          Host key <code id="hostKeyText"></code>
+          <button type="button" id="forgetHostKey">Forget</button>
+        </div>
+      </div>
+      <div id="testResult" class="test-result" hidden></div>
+      <div class="dialog-actions">
+        <button type="button" id="deleteServer" class="danger">Delete</button>
+        <div class="spacer"></div>
+        <button type="button" id="testServer">Test connection</button>
+        <button type="button" id="cancelEdit">Cancel</button>
+        <button type="submit" class="primary" id="saveServer">Save &amp; connect</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="passDialog">
+    <form id="passForm" method="dialog">
+      <h2>Key passphrase</h2>
+      <p id="passText" class="meta"></p>
+      <input name="passphrase" type="password" autocomplete="off" required>
+      <div class="dialog-actions">
+        <div class="spacer"></div>
+        <button type="button" id="passCancel">Cancel</button>
+        <button type="submit" class="primary">Connect</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="../node_modules/chart.js/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
