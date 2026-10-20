@@ -43,14 +43,31 @@ These are approximate figures from public docs, guides and reviews. They vary wi
 
 **What this tool trades away:** nothing is collected while the app is closed. There are no alerts, and no history beyond the last hour held in the desktop app. If you need 24/7 history or alerting, use Netdata, Beszel or Prometheus. VPS Monitor is for "show me right now which service is eating my small VPS" with close to zero overhead.
 
-## Quick start
+## Installation
+
+Requirements: Windows, [Node.js](https://nodejs.org/) 18 or newer, and SSH private-key access to your servers.
 
 ```bash
+git clone <repo-url> vps-monitoring-app
+cd vps-monitoring-app
 npm install
-npm start        # real servers
-npm run mock     # 3 fake servers, no SSH (UI development)
-npm run dist     # Windows installer in dist/
 ```
+
+`npm install` downloads Electron, so it can take a minute. Nothing is installed on your servers.
+
+To build a Windows installer instead of running from source, run `npm run dist`. The installer is written to `dist/`.
+
+## Opening the app
+
+- **Shortcut (no console window):** double-click `VPS Monitor.lnk` or `VPS-Monitor.vbs` in the project folder. Copy the shortcut to your Desktop or pin it to the taskbar if you like. It uses absolute paths, so recreate it if you move the project folder.
+- **From a terminal:**
+
+  ```bash
+  npm start        # real servers
+  npm run mock     # 3 fake servers, no SSH (UI development)
+  ```
+
+On first launch, add a server (host, user, private key) in the app. See [Server settings](#server-settings) for the options.
 
 ## How it works
 - Each server gets its own SSH session (private-key auth). On connect the app uploads `vpsmon-json.sh` to `~/.vpsmon/` (only when it changed) and runs it. The script prints one JSON line per tick, and the app plots every line it receives.

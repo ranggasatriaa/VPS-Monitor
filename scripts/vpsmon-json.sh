@@ -8,6 +8,7 @@
 #
 # Environment:
 #   VPSMON_DB    Laravel queue database (table jobs). Empty = skip the queue check.
+#   VPSMON_SKIP  comma-separated module labels to not monitor.
 #   VPSMON_CONF  modules file with "label|systemd unit" lines; replaces the
 #                built-in list. Default: ~/.vpsmon/modules.conf
 #
@@ -27,6 +28,7 @@ QUEUE_EVERY=10            # seconds: queued job count (psql)
 DB=${VPSMON_DB-peta_hukum_qa}
 CONF=${VPSMON_CONF:-$HOME/.vpsmon/modules.conf}
 CG=/sys/fs/cgroup
+SKIP=",${VPSMON_SKIP-},"   # comma-separated module labels to leave out
 NCPU=0; while read -r k _; do [[ $k == cpu[0-9]* ]] && NCPU=$((NCPU + 1)); done < /proc/stat
 ((NCPU > 0)) || NCPU=1
 
@@ -71,6 +73,7 @@ done < <(systemctl show -p Id -p LoadState -p ControlGroup "${ALL_UNITS[@]}" 2>/
 LABELS=() UNITS=() PATTERNS=()
 for m in "${MODULES[@]}"; do
   label=${m%%|*} unit=${m#*|}
+  [[ $SKIP == *",$label,"* ]] && continue
   [[ ${LOADED[$unit]:-} == loaded ]] || continue
   # a stopped unit has no ControlGroup; keep the default path so its numbers
   # come back as soon as the unit starts again.
@@ -78,8 +81,8 @@ for m in "${MODULES[@]}"; do
   LABELS+=("$label") UNITS+=("$unit") PATTERNS+=("$CG$cg")
 done
 # pseudo-modules: docker containers & SSH/user sessions
-LABELS+=("containers") UNITS+=("") PATTERNS+=("$CG/system.slice/docker-*.scope")
-LABELS+=("ssh/users")  UNITS+=("") PATTERNS+=("$CG/user.slice")
+[[ $SKIP == *",containers,"* ]] || { LABELS+=("containers") UNITS+=("") PATTERNS+=("$CG/system.slice/docker-*.scope"); }
+[[ $SKIP == *",ssh/users,"* ]]  || { LABELS+=("ssh/users")  UNITS+=("") PATTERNS+=("$CG/user.slice"); }
 UNIT_LIST=(); for u in "${UNITS[@]}"; do [[ -n $u ]] && UNIT_LIST+=("$u"); done
 
 # --- fork-free helpers: results go to globals ---------------------------------

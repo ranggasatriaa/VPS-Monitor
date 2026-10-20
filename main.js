@@ -33,7 +33,12 @@ function createWindow() {
   win.webContents.on('will-navigate', (e) => e.preventDefault());
 }
 
-app.whenReady().then(() => {
+// one window only: a second launch focuses the existing one
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) app.quit();
+app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+
+if (gotLock) app.whenReady().then(() => {
   manager = new ServerManager({
     configPath: path.join(app.getPath('userData'), MOCK ? 'config.mock.json' : 'config.json'),
     script: fs.readFileSync(path.join(__dirname, 'scripts', 'vpsmon-json.sh')),
@@ -45,6 +50,7 @@ app.whenReady().then(() => {
   ipcMain.handle('servers:list', () => manager.list());
   ipcMain.handle('servers:save', (_e, profile) => manager.upsert(profile));
   ipcMain.handle('servers:delete', (_e, id) => manager.remove(id));
+  ipcMain.handle('servers:setModules', (_e, id, disabled) => manager.setModules(id, disabled));
   ipcMain.handle('servers:reorder', (_e, ids) => manager.reorder(ids));
   ipcMain.handle('servers:test', (_e, profile, passphrase) => manager.test(profile, passphrase));
   ipcMain.handle('server:connect', (_e, id, passphrase) => manager.connect(id, passphrase));

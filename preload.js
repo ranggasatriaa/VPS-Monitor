@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('vpsmon', {
   listServers: () => ipcRenderer.invoke('servers:list'),
   saveServer: (profile) => ipcRenderer.invoke('servers:save', profile),
   deleteServer: (id) => ipcRenderer.invoke('servers:delete', id),
+  setModules: (id, disabled) => ipcRenderer.invoke('servers:setModules', id, disabled),
   reorderServers: (ids) => ipcRenderer.invoke('servers:reorder', ids),
   testServer: (profile, passphrase) => ipcRenderer.invoke('servers:test', profile, passphrase),
   connect: (id, passphrase) => ipcRenderer.invoke('server:connect', id, passphrase),

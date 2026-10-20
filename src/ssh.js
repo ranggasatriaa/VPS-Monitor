@@ -155,7 +155,8 @@ class VpsSession extends EventEmitter {
   _command(paths, once) {
     const p = this.profile;
     const interval = Math.min(60, Math.max(1, Number(p.interval) || 2));
-    return `${p.useSudo ? 'sudo -n ' : ''}env VPSMON_DB=${shq(p.db ?? '')} VPSMON_CONF=${shq(paths.conf)} bash ${shq(paths.script)} ${once ? '--once' : interval}`;
+    const skip = (p.disabledModules || []).join(',');
+    return `${p.useSudo ? 'sudo -n ' : ''}env VPSMON_DB=${shq(p.db ?? '')} VPSMON_SKIP=${shq(skip)} VPSMON_CONF=${shq(paths.conf)} bash ${shq(paths.script)} ${once ? '--once' : interval}`;
   }
 
   _exec(conn, paths) {

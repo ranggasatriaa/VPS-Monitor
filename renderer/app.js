@@ -270,7 +270,11 @@ function buildOverview() {
       const sw = el('span', 'swatch');
       const name = el('span', 'name');
       const st = el('span', 'st idle');
-      head.append(sw, name, st);
+      const edit = el('button', 'card-edit', 'Edit');
+      edit.type = 'button';
+      edit.addEventListener('click', (e) => { e.stopPropagation(); openEditor(s.id); });
+      edit.addEventListener('keydown', (e) => e.stopPropagation());
+      head.append(sw, name, st, edit);
       const host = el('div', 'host');
       const metrics = el('div', 'metrics');
       const m = {};
@@ -422,7 +426,8 @@ function moduleColor(id, name) {
 
 function moduleSeries(id, w, field, chartKey) {
   const names = new Map(); // name -> avg
-  for (const x of w) for (const m of x.d.modules) names.set(m.name, (names.get(m.name) || 0) + m[field]);
+  const off = serverById(id)?.disabledModules || [];
+  for (const x of w) for (const m of x.d.modules) if (!off.includes(m.name)) names.set(m.name, (names.get(m.name) || 0) + m[field]);
   const last = w.length ? w[w.length - 1].d.modules : [];
   // color order follows the first-seen CPU ranking, independent of which chart asks
   [...last].sort((a, b) => b.cpu - a.cpu).forEach((m) => moduleColor(id, m.name));
@@ -518,13 +523,41 @@ function updateDetail() {
   setText($('#queueTop'), d?.queue?.top ? `Most queued: ${d.queue.top}` : '');
   for (const c of Object.values(C)) { setRange(c); c.update('none'); }
 
+  renderModToggles(s);
   renderModTable(id, d);
+}
+
+// Checkbox per known module; only rebuilt when the set or its state changes so clicks aren't lost.
+let modToggleSig = '';
+function renderModToggles(s) {
+  const box = $('#modToggles');
+  const off = s.disabledModules || [];
+  const names = [...new Set([...(s.knownModules || []), ...off])].sort();
+  const sig = `${s.id}|${names.join(',')}|${off.join(',')}`;
+  if (sig === modToggleSig) return;
+  modToggleSig = sig;
+  const frag = document.createDocumentFragment();
+  for (const n of names) {
+    const label = el('label', off.includes(n) ? 'off' : '');
+    const cb = el('input');
+    cb.type = 'checkbox';
+    cb.checked = !off.includes(n);
+    cb.addEventListener('change', async () => {
+      const next = new Set(serverById(s.id)?.disabledModules || []);
+      if (cb.checked) next.delete(n); else next.add(n);
+      applyServers(await api.setModules(s.id, [...next]));
+    });
+    label.append(cb, document.createTextNode(n));
+    frag.append(label);
+  }
+  box.replaceChildren(frag);
 }
 
 function renderModTable(id, d) {
   const tbody = $('#modTable tbody');
   if (!d) { tbody.textContent = ''; return; }
-  const rows = [...d.modules].sort((a, b) => b.cpu - a.cpu);
+  const off = serverById(id)?.disabledModules || [];
+  const rows = d.modules.filter((m) => !off.includes(m.name)).sort((a, b) => b.cpu - a.cpu);
   const frag = document.createDocumentFragment();
   for (const m of rows) {
     const tr = el('tr');

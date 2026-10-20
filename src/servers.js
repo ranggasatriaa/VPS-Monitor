@@ -44,12 +44,12 @@ class ServerManager {
   }
 
   upsert(input) {
-    const clean = { ...DEFAULTS };
+    let s = input.id && this._find(input.id);
+    const clean = { ...DEFAULTS, disabledModules: [], knownModules: [], ...(s || {}) };
     for (const k of Object.keys(DEFAULTS)) if (input[k] !== undefined) clean[k] = input[k];
     clean.port = Number(clean.port) || 22;
     clean.interval = Math.min(60, Math.max(1, Number(clean.interval) || 2));
     clean.name = String(clean.name || clean.host || 'server').trim();
-    let s = input.id && this._find(input.id);
     if (s) {
       const connChanged = ['host', 'port', 'username', 'privateKeyPath'].some((k) => s[k] !== clean[k]);
       if (connChanged) this.passphrases.delete(s.id);
@@ -62,6 +62,27 @@ class ServerManager {
     // restart a running session so the new settings apply
     if (this.sessions.has(s.id)) { this.disconnect(s.id); this.connect(s.id); }
     return this.list();
+  }
+
+  // Turn modules on/off. `disabled` is the full list of module labels to skip.
+  setModules(id, disabled) {
+    const s = this._find(id);
+    if (!s) return this.list();
+    s.disabledModules = [...new Set((disabled || []).map(String))];
+    this._save();
+    if (this._running(id)) { this.disconnect(id); this.connect(id); }
+    return this.list();
+  }
+
+  _learnModules(id, names) {
+    const s = this._find(id);
+    if (!s) return;
+    const known = s.knownModules || (s.knownModules = []);
+    const fresh = names.filter((n) => !known.includes(n));
+    if (!fresh.length) return;
+    known.push(...fresh);
+    this._save();
+    this.send('servers', this.list());
   }
 
   remove(id) {
@@ -107,7 +128,11 @@ class ServerManager {
       this.status.set(id, st);
       this.send('status', { serverId: id, ...st });
     });
-    sess.on('sample', (data) => this.sessions.get(id) === sess && this.send('sample', { serverId: id, data }));
+    sess.on('sample', (data) => {
+      if (this.sessions.get(id) !== sess) return;
+      this._learnModules(id, (data.modules || []).map((m) => m.name));
+      this.send('sample', { serverId: id, data });
+    });
     sess.on('log', (line) => this.send('log', { serverId: id, line, t: Date.now() }));
     sess.start();
   }

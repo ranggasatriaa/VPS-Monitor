@@ -71,7 +71,8 @@ class MockSession extends EventEmitter {
 
   sample() {
     let tracked = 0;
-    const modules = MODULES.map(([name, unit]) => {
+    const off = this.profile.disabledModules || [];
+    const modules = MODULES.filter(([name]) => !off.includes(name)).map(([name, unit]) => {
       const w = this.walk[name];
       const spike = Math.random() < 0.03 ? 25 * Math.random() : 0;
       w.cpu = clamp(w.cpu + (Math.random() - 0.5) * 2, 0, 30);
