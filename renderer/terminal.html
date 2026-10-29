@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terminal</title>
+  <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css">
+  <link rel="stylesheet" href="terminal.css">
+</head>
+<body>
+  <header id="bar">
+    <span id="swatch" class="swatch"></span>
+    <span id="name" class="name"></span>
+    <span id="target" class="target"></span>
+    <span class="spacer"></span>
+    <span id="state" class="st idle">Connecting…</span>
+    <span class="hint">Ctrl+Shift+C copy · Ctrl+Shift+V paste</span>
+    <button id="reconnect" type="button" hidden>Reconnect</button>
+  </header>
+  <div id="screen"></div>
+
+  <dialog id="passDialog">
+    <form id="passForm" method="dialog">
+      <h2>Key passphrase</h2>
+      <p class="meta">The private key is encrypted. The passphrase stays in memory until the app closes.</p>
+      <input name="passphrase" type="password" autocomplete="off" required>
+      <div class="dialog-actions">
+        <button type="button" id="passCancel">Cancel</button>
+        <button type="submit" class="primary">Connect</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="terminal.js"></script>
+</body>
+</html>

@@ -274,7 +274,12 @@ function buildOverview() {
       edit.type = 'button';
       edit.addEventListener('click', (e) => { e.stopPropagation(); openEditor(s.id); });
       edit.addEventListener('keydown', (e) => e.stopPropagation());
-      head.append(sw, name, st, edit);
+      const term = el('button', 'card-term', 'Terminal');
+      term.type = 'button';
+      term.title = 'Open an SSH terminal window';
+      term.addEventListener('click', (e) => { e.stopPropagation(); api.openTerminal(s.id); });
+      term.addEventListener('keydown', (e) => e.stopPropagation());
+      head.append(sw, name, st, term, edit);
       const host = el('div', 'host');
       const metrics = el('div', 'metrics');
       const m = {};
@@ -763,6 +768,7 @@ $('#btnConnect').addEventListener('click', () => {
 });
 $('#btnDisconnect').addEventListener('click', () => api.disconnect(S.sel));
 $('#btnEdit').addEventListener('click', () => openEditor(S.sel));
+$('#btnTerminal').addEventListener('click', () => api.openTerminal(S.sel));
 
 function syncWindowButtons() {
   document.querySelectorAll('#windowSel button').forEach((b) => b.classList.toggle('on', Number(b.dataset.ms) === S.windowMs));

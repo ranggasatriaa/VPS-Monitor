@@ -102,4 +102,48 @@ class MockSession extends EventEmitter {
   }
 }
 
-module.exports = { MockSession, mockProfiles };
+// Fake shell for the terminal window in mock mode: local line editing and a few canned commands.
+class MockTerminal extends EventEmitter {
+  constructor(profile) {
+    super();
+    this.profile = profile;
+    this.line = '';
+    this.ended = false;
+    this.prompt = `\x1b[32m${profile.username}@${profile.name}\x1b[0m:\x1b[34m~\x1b[0m$ `;
+  }
+
+  start() {
+    setTimeout(() => this.emit('ready'), 150);
+    setTimeout(() => this.emit('data', `Mock shell on ${this.profile.name} (no real SSH). Try: uptime, free -h, exit\r\n${this.prompt}`), 200);
+  }
+
+  write(data) {
+    if (this.ended) return;
+    for (const ch of data) {
+      if (ch === '\r') this._run();
+      else if (ch === '\x7f') { if (this.line) { this.line = this.line.slice(0, -1); this.emit('data', '\b \b'); } }
+      else if (ch === '\x03') { this.line = ''; this.emit('data', `^C\r\n${this.prompt}`); }
+      else if (ch >= ' ') { this.line += ch; this.emit('data', ch); }
+    }
+  }
+
+  _run() {
+    const cmd = this.line.trim();
+    this.line = '';
+    const out = {
+      '': '',
+      uptime: ` ${new Date().toTimeString().slice(0, 8)} up 12 days,  3:04,  1 user,  load average: 0.42, 0.38, 0.35`,
+      'free -h': '               total        used        free\r\nMem:            16Gi       5.1Gi        10Gi\r\nSwap:          2.0Gi       140Mi       1.9Gi',
+      whoami: this.profile.username,
+      hostname: this.profile.name,
+    };
+    if (cmd === 'exit') { this.emit('data', '\r\nlogout\r\n'); this.ended = true; this.emit('exit', { message: 'Session closed' }); return; }
+    const text = cmd in out ? out[cmd] : `${cmd.split(' ')[0]}: command not found (mock)`;
+    this.emit('data', `\r\n${text ? text + '\r\n' : ''}${this.prompt}`);
+  }
+
+  resize() {}
+  stop() { this.ended = true; }
+}
+
+module.exports = { MockSession, MockTerminal, mockProfiles };

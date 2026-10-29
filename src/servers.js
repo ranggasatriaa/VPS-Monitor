@@ -3,7 +3,8 @@
 const fs = require('fs');
 const crypto = require('crypto');
 const { VpsSession, testProfile } = require('./ssh');
-const { MockSession, mockProfiles } = require('./mock');
+const { TerminalSession } = require('./terminal');
+const { MockSession, MockTerminal, mockProfiles } = require('./mock');
 
 // categorical slots (dark-surface steps), assigned to new servers in fixed order
 const PALETTE = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
@@ -135,6 +136,16 @@ class ServerManager {
     });
     sess.on('log', (line) => this.send('log', { serverId: id, line, t: Date.now() }));
     sess.start();
+  }
+
+  get(id) { return this._find(id); }
+
+  // New interactive shell session for a server (caller starts and stops it).
+  terminal(id, passphrase) {
+    const profile = this._find(id);
+    if (!profile) return null;
+    if (passphrase) this.passphrases.set(id, passphrase);
+    return this.mock ? new MockTerminal(profile) : new TerminalSession({ ...profile }, this._sessionOpts(profile));
   }
 
   disconnect(id) {

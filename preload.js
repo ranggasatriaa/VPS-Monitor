@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('vpsmon', {
   connectAll: () => ipcRenderer.invoke('servers:connectAll'),
   disconnectAll: () => ipcRenderer.invoke('servers:disconnectAll'),
   pickKey: () => ipcRenderer.invoke('dialog:pickKey'),
+  openTerminal: (id) => ipcRenderer.invoke('terminal:open', id),
   onSample: on('sample'),
   onStatus: on('status'),
   onLog: on('log'),

@@ -20,6 +20,23 @@ function sftpCall(sftp, method, ...args) {
   return new Promise((resolve, reject) => sftp[method](...args, (err, res) => (err ? reject(err) : resolve(res))));
 }
 
+// Read and parse the profile's private key; throws FatalError when retrying won't help.
+function loadKey(p, passphrase) {
+  if (!p.privateKeyPath) throw new FatalError('No private key file set', 'NO_KEY');
+  let buf;
+  try { buf = fs.readFileSync(p.privateKeyPath); } catch (e) {
+    throw new FatalError(`Cannot read key file: ${e.message}`, 'NO_KEY');
+  }
+  const parsed = utils.parseKey(buf, passphrase);
+  if (parsed instanceof Error) {
+    if (/passphrase|encrypted|decrypt/i.test(parsed.message)) {
+      throw new FatalError(passphrase ? 'Wrong key passphrase' : 'Key is encrypted: passphrase needed', 'NEED_PASSPHRASE');
+    }
+    throw new FatalError(`Unsupported key: ${parsed.message}`, 'BAD_KEY');
+  }
+  return { buf, passphrase };
+}
+
 class VpsSession extends EventEmitter {
   /**
    * @param {object} profile   server profile from config
@@ -60,23 +77,7 @@ class VpsSession extends EventEmitter {
   }
 
   // --- internals ---------------------------------------------------------------
-  _loadKey() {
-    const p = this.profile;
-    if (!p.privateKeyPath) throw new FatalError('No private key file set', 'NO_KEY');
-    let buf;
-    try { buf = fs.readFileSync(p.privateKeyPath); } catch (e) {
-      throw new FatalError(`Cannot read key file: ${e.message}`, 'NO_KEY');
-    }
-    const passphrase = this.opts.getPassphrase();
-    const parsed = utils.parseKey(buf, passphrase);
-    if (parsed instanceof Error) {
-      if (/passphrase|encrypted|decrypt/i.test(parsed.message)) {
-        throw new FatalError(passphrase ? 'Wrong key passphrase' : 'Key is encrypted: passphrase needed', 'NEED_PASSPHRASE');
-      }
-      throw new FatalError(`Unsupported key: ${parsed.message}`, 'BAD_KEY');
-    }
-    return { buf, passphrase };
-  }
+  _loadKey() { return loadKey(this.profile, this.opts.getPassphrase()); }
 
   _connect() {
     clearTimeout(this.timer);
@@ -244,4 +245,4 @@ function testProfile(profile, opts) {
   });
 }
 
-module.exports = { VpsSession, testProfile, fingerprint };
+module.exports = { VpsSession, testProfile, fingerprint, loadKey, FatalError };

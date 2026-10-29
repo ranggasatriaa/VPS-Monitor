@@ -205,4 +205,5 @@ textarea { font-family: ui-monospace, Consolas, monospace; resize: vertical; }
 .mod-toggles label { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border: 1px solid var(--line, #383835); border-radius: 999px; font-size: 12px; cursor: pointer; user-select: none; }
 .mod-toggles label.off { opacity: .55; text-decoration: line-through; }
 .mod-toggles input { margin: 0; }
-.card .card-edit { margin-left: auto; }
+.card .card-term { margin-left: auto; }
+.card .card-term, .card .card-edit { padding: 3px 10px; font-size: 12px; }

@@ -71,9 +71,11 @@ On first launch, add a server (host, user, private key) in the app. See [Server 
 
 ## How it works
 - Each server gets its own SSH session (private-key auth). On connect the app uploads `vpsmon-json.sh` to `~/.vpsmon/` (only when it changed) and runs it. The script prints one JSON line per tick, and the app plots every line it receives.
+- Closing the window doesn't stop the app. It hides to the system tray, and the SSH sessions and chart history keep running, so the graphs are still there when you reopen it. Click the tray icon or launch the shortcut again to bring the window back. Use **Quit** in the tray menu to exit.
 - If the connection drops, that server reconnects on its own (2s → 30s backoff). The other servers keep running.
 - The first host key seen for a server is saved (trust on first use). If the key changes later, the app refuses to connect until you click **Forget** in the server settings.
 - A key passphrase is kept in memory only and is never written to disk.
+- **Terminal** (on each server card and in the server header) opens an interactive SSH shell for that server in its own window. It uses its own connection with the same key, passphrase and host-key check, so it doesn't interrupt monitoring. Clicking it again focuses the open window. Ctrl+Shift+C / Ctrl+Shift+V copy and paste, and right-click copies the selection or pastes. After the session ends, press Enter to reconnect.
 - Profiles are saved in `%APPDATA%/vps-monitor/config.json`.
 
 ## Server settings

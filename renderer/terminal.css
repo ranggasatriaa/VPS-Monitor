@@ -1,0 +1,81 @@
+:root {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface-1: #1a1a19;
+  --surface-2: #222220;
+  --surface-3: #2c2c2a;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --border: rgba(255, 255, 255, 0.10);
+  --accent: #3987e5;
+  --good: #0ca30c;
+  --warning: #fab219;
+  --critical: #d03b3b;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--page); color: var(--ink); display: flex; flex-direction: column; overflow: hidden; }
+[hidden] { display: none !important; }
+
+button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+button:hover { background: var(--surface-3); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.primary { background: #256abf; border-color: transparent; color: #fff; }
+button.primary:hover { background: #2a78d6; }
+
+#bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+#bar .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+#bar .name { font-weight: 600; }
+#bar .target, #bar .hint { color: var(--muted); font-size: 12px; }
+#bar .spacer { flex: 1; }
+
+.st { font-size: 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+.st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.st.good::before { background: var(--good); }
+.st.warn::before { background: var(--warning); }
+.st.crit::before { background: var(--critical); }
+
+#screen { flex: 1; min-height: 0; padding: 6px 4px 4px 10px; }
+#screen .xterm { height: 100%; }
+
+dialog {
+  background: var(--surface-1);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  width: min(420px, 92vw);
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+dialog h2 { margin: 0 0 6px; font-size: 16px; }
+dialog .meta { color: var(--muted); margin: 0 0 12px; }
+dialog input {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 9px;
+}
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
